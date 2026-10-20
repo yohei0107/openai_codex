@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRound,teeOrder,teams,vegas,olympic,olympicNet,match,headToHead,upDown,totals,validRound,MAX_PUSHES,vegasRules,canPush,carryFor} from '../src/game.js';
+import {createRound,teeOrder,teams,vegas,olympic,olympicNet,match,headToHead,upDown,totals,validRound,validCourse,applyCourse,scoreMark,MAX_PUSHES,vegasRules,canPush,carryFor} from '../src/game.js';
 // A new round with the ones-digit round-up turned off, plus any rule overrides.
 const plain=(over={})=>{const r=createRound();Object.assign(r.vegasRules,{roundUp:false},over);return r;};
 test('ラスベガスはチームの小さいスコアを十の位にし、差分を対称加算',()=>{const r=plain({birdie:false});r.holes[0].scores=[4,5,6,3];const v=vegas(r,0);assert.deepEqual(v.a,[0,3]);assert.equal(v.na,34);assert.equal(v.nb,56);assert.deepEqual(v.points,[22,-22,-22,22]);assert.equal(v.points.reduce((a,b)=>a+b),0);});
@@ -175,4 +175,16 @@ test('ホールマッチのアップダウンは、指定ホールまでの累�
  assert.equal(headToHead(r,2)[0][2],0);assert.equal(headToHead(r,2)[0][3],1);assert.equal(headToHead(r,3)[1][0],-1);
  assert.deepEqual(totals(r).map(s=>s.match),[0,-1,3,-2]);
  assert.equal(upDown(2),'2UP');assert.equal(upDown(-1),'1DN');assert.equal(upDown(0),'AS');
+});
+test('登録コースの検証と、パー・コース名の反映',()=>{
+ const pars=[4,4,5,4,3,4,5,4,3,4,4,5,4,3,4,5,4,3];
+ const c={id:'c1',name:'テストカントリー',pars};assert.equal(validCourse(c),true);
+ for(const bad of [{...c,id:''},{...c,name:'  '},{...c,pars:pars.slice(1)},{...c,pars:[...pars.slice(1),7]},null]) assert.equal(validCourse(bad),false);
+ const r=createRound();applyCourse(r,c);
+ assert.equal(r.course,'テストカントリー');assert.equal(r.courseId,'c1');assert.deepEqual(r.holes.map(h=>h.par),pars);assert.equal(validRound(r),true);
+ r.courseId=5;assert.equal(validRound(r),false);
+});
+test('スコアの記号はパーとの差で決まる',()=>{
+ assert.deepEqual([2,3,4,5,6,9,null].map(s=>scoreMark(s,4)),['eagle','birdie','par','bogey','double','double','']);
+ assert.equal(scoreMark(1,4),'eagle');
 });

@@ -161,6 +161,23 @@ function validHole(h) {
     && h.putts.every((p,i) => p === null || Number.isInteger(p) && p >= 0 && p <= 10 && (h.scores[i] === null || p <= h.scores[i]))
     && optional(h.medals, m => Array.isArray(m) && m.length === 4 && m.every(x => x === '' || Object.hasOwn(medals, x)) && new Set(m.filter(Boolean)).size === m.filter(Boolean).length);
 }
+// A course saved on this device: name and the par of all 18 holes.
+export function validCourse(c) {
+  return c !== null && typeof c === 'object' && typeof c.id === 'string' && c.id.length > 0 && c.id.length <= 40
+    && typeof c.name === 'string' && c.name.trim().length > 0 && c.name.length <= 60
+    && Array.isArray(c.pars) && c.pars.length === 18 && c.pars.every(oneOf([3,4,5,6]));
+}
+export function applyCourse(round, course) {
+  round.course = course.name;
+  round.courseId = course.id;
+  round.holes.forEach((h, i) => { h.par = course.pars[i]; });
+}
+// Score relative to par, as marked on a paper scorecard.
+export function scoreMark(score, par) {
+  if (!Number.isInteger(score)) return '';
+  const d = score - par;
+  return d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 0 ? 'par' : d === 1 ? 'bogey' : 'double';
+}
 export function validRound(r) {
- return r?.version===1 && optional(r.started, isBool) && optional(r.vegasRules, validRules) && typeof r.course==='string' && Array.isArray(r.names)&&r.names.length===4&&r.names.every(n=>typeof n==='string'&&n.length<=30)&&[9,18].includes(r.count)&&[1,2,3].includes(r.partner)&&Array.isArray(r.holes)&&r.holes.length===18&&r.holes.every(validHole);
+ return r?.version===1 && optional(r.started, isBool) && optional(r.courseId, x => typeof x === 'string' && x.length <= 40) && optional(r.vegasRules, validRules) && typeof r.course==='string' && Array.isArray(r.names)&&r.names.length===4&&r.names.every(n=>typeof n==='string'&&n.length<=30)&&[9,18].includes(r.count)&&[1,2,3].includes(r.partner)&&Array.isArray(r.holes)&&r.holes.length===18&&r.holes.every(validHole);
 }
